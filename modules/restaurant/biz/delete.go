@@ -2,7 +2,7 @@ package restaurantbiz
 
 import (
 	"context"
-	"fmt"
+	"go-training/common"
 	restaurantmodel "go-training/modules/restaurant/model"
 )
 
@@ -21,20 +21,19 @@ func NewDeleteRestaurantBiz(store DeleteRestaurantStore) *deleteRestaurantBiz {
 
 func (biz *deleteRestaurantBiz) DeleteRestaurant(ctx context.Context, id int) error {
 
-	// Validate data of Biz layer
-	// Find Restaurant by id
-	restaurant, err := biz.store.FindDataWithCondition(ctx, map[string]interface{}{"id": id})
-	fmt.Println(restaurant)
+	oldData, err := biz.store.FindDataWithCondition(ctx, map[string]interface{}{"id": id})
 	if err != nil {
+		if err != common.RecordNotFound {
+			return common.RecordNotFound
+		}
 		return err
 	}
-	if restaurant.Status == 0 {
-		return restaurantmodel.ErrNotFound
+	if oldData.Status == 0 {
+		return common.ErrEntityDeleted(restaurantmodel.EntityName, err)
 	}
 
 	if err := biz.store.Delete(ctx, id); err != nil {
 		return err
 	}
-
 	return nil
 }

@@ -18,11 +18,6 @@ func NewCreateRestaurantBiz(store CreateRestaurantStore) *createRestaurantBiz {
 }
 
 func (biz *createRestaurantBiz) CreateRestaurant(ctx context.Context, data *restaurantmodel.RestaurantCreate) error {
-
-	// Validate data theo Biz
-	// Ten khong duoc trung, Name unique
-	// Validate dia chi co ton tai hay khong
-
 	if err := data.Validate(); err != nil {
 		return err
 	}

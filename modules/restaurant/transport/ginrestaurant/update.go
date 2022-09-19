@@ -4,12 +4,13 @@ import (
 	"go-training/common"
 	"go-training/component/app_context"
 	restaurantbiz "go-training/modules/restaurant/biz"
+	restaurantmodel "go-training/modules/restaurant/model"
 	restaurantstorage "go-training/modules/restaurant/storage"
 
 	"github.com/gin-gonic/gin"
 )
 
-func DeleteRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
+func UpdateRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uid, err := common.FromBase58(c.Param("id"))
 
@@ -22,10 +23,19 @@ func DeleteRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 			return
 		}
 
-		store := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
-		biz := restaurantbiz.NewDeleteRestaurantBiz(store)
+		var data restaurantmodel.RestaurantUpdate
 
-		if err := biz.DeleteRestaurant(c.Request.Context(), int(uid.GetLocalID())); err != nil {
+		if err := c.ShouldBind(&data); err != nil {
+			c.JSON(401, gin.H{
+				"error": err,
+			})
+			return
+		}
+
+		store := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
+		biz := restaurantbiz.NewUpdateRestaurantBiz(store)
+
+		if err := biz.UpdateRestaurantBiz(c.Request.Context(), int(uid.GetLocalID()), &data); err != nil {
 			c.JSON(401, gin.H{
 				"error": err,
 			})
