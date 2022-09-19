@@ -6,6 +6,7 @@ import (
 	"go-training/component/app_context"
 	restaurantstorage "go-training/modules/restaurant/storage"
 	"go-training/pubsub"
+	"log"
 )
 
 type HasRestaurantId interface {
@@ -36,6 +37,20 @@ func RunIncreaseLikeCountAfterUserLikeRestaurant(appCtx app_context.AppContext) 
 			store := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
 			likeData := message.Data().(HasRestaurantId)
 			return store.IncreaseLikeCount(ctx, likeData.GetRestaurantId())
+		},
+	}
+}
+
+func NotificationAfterUserLikeRestaurant(appCtx app_context.AppContext) consumerJob {
+
+	return consumerJob{
+		Title: "Notification after user liked restaurant",
+		Hld: func(ctx context.Context, message *pubsub.Message) error {
+
+			likeData := message.Data().(HasRestaurantId)
+			// do something
+			log.Println("Notification after user liked restaurant", likeData.GetOwnerId())
+			return nil
 		},
 	}
 }

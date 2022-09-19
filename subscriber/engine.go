@@ -29,6 +29,7 @@ func (e *consumerEngine) Start() error {
 		common.TopicUserLikeRestaurant,
 		true,
 		RunIncreaseLikeCountAfterUserLikeRestaurant(e.appCtx),
+		NotificationAfterUserLikeRestaurant(e.appCtx),
 	)
 
 	return nil
@@ -50,12 +51,12 @@ func (e *consumerEngine) startSubTopic(topic pubsub.Topic, isConcurrent bool, jo
 
 	go func() {
 		for {
-			msg := c
+			msg := <-c
 
 			jobHdlArr := make([]asyncjob.Job, len(jobs))
 
 			for i := range jobs {
-				jobHdlArr[i] = asyncjob.NewJob(getJobHandler(&jobs[i], <-msg))
+				jobHdlArr[i] = asyncjob.NewJob(getJobHandler(&jobs[i], msg))
 			}
 
 			group := asyncjob.NewGroup(isConcurrent, jobHdlArr...)
