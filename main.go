@@ -8,6 +8,9 @@ import (
 	"go-training/modules/restaurantlike/transport/ginrestaurantlike"
 	userstorage "go-training/modules/user/storage"
 	"go-training/modules/user/transport/ginuser"
+	"go-training/pubsub/pblocal"
+	"go-training/subscriber"
+	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -28,9 +31,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	appCtx := app_context.NewAppContext(db, secretKey)
+	appCtx := app_context.NewAppContext(db, secretKey, pblocal.NewPubSub())
 
 	r := gin.Default()
+
+	// subscriber.Setup(appCtx)
+	if err := subscriber.NewEngine(appCtx).Start(); err != nil {
+		log.Fatalln(err)
+	}
 
 	r.Use(middleware.Recover(appCtx))
 

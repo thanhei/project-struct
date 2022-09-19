@@ -34,6 +34,14 @@ func ListRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 			panic(err)
 		}
 
+		for i := range result {
+			result[i].Mask(false)
+
+			if i == len(result)-1 {
+				pagingData.NextCursor = result[i].FakeId.String()
+			}
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"result":     result,
 			"pagingData": pagingData,
@@ -41,4 +49,3 @@ func ListRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 		})
 	}
 }
-

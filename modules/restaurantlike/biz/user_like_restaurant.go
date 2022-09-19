@@ -3,8 +3,8 @@ package rstlikebiz
 import (
 	"context"
 	"go-training/common"
-	"go-training/component/asyncjob"
 	restaurantlikemodel "go-training/modules/restaurantlike/model"
+	"go-training/pubsub"
 )
 
 type UserLikeRestaurantStore interface {
@@ -16,17 +16,20 @@ type IncreaseLikeCountStore interface {
 }
 
 type userLikeRestaurantBiz struct {
-	store    UserLikeRestaurantStore
-	incStore IncreaseLikeCountStore
+	store UserLikeRestaurantStore
+	// incStore IncreaseLikeCountStore
+	pubsub pubsub.Pubsub
 }
 
 func NewUserLikeRestaurantBiz(
 	store UserLikeRestaurantStore,
-	incStore IncreaseLikeCountStore,
+	// incStore IncreaseLikeCountStore,
+	pubsub pubsub.Pubsub,
 ) *userLikeRestaurantBiz {
 	return &userLikeRestaurantBiz{
-		store:    store,
-		incStore: incStore,
+		store:  store,
+		pubsub: pubsub,
+		// incStore: incStore,
 	}
 }
 
@@ -37,14 +40,16 @@ func (biz *userLikeRestaurantBiz) LikeRestaurant(ctx context.Context, data *rest
 		return restaurantlikemodel.ErrUserCannotLikeRestaurant(err)
 	}
 
-	go func() {
-		defer common.AppRecovery()
-		job := asyncjob.NewJob(func(ctx context.Context) error {
-			return biz.incStore.IncreaseLikeCount(ctx, data.RestaurantId)
-		})
+	biz.pubsub.Publish(ctx, common.TopicUserLikeRestaurant, pubsub.NewMessage(data))
 
-		_ = asyncjob.NewGroup(true, job).Run(ctx)
-	}()
+	// go func() {
+	// 	defer common.AppRecovery()
+	// 	job := asyncjob.NewJob(func(ctx context.Context) error {
+	// 		return biz.incStore.IncreaseLikeCount(ctx, data.RestaurantId)
+	// 	})
+
+	// 	_ = asyncjob.NewGroup(true, job).Run(ctx)
+	// }()
 
 	return nil
 }
