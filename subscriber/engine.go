@@ -32,6 +32,12 @@ func (e *consumerEngine) Start() error {
 		NotificationAfterUserLikeRestaurant(e.appCtx),
 	)
 
+	e.startSubTopic(
+		common.TopicUserDislikeRestaurant,
+		true,
+		DecreaseLikeCountAfterUserUnLikeRestaurant(e.appCtx),
+	)
+
 	return nil
 }
 

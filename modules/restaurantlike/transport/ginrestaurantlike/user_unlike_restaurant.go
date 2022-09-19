@@ -3,7 +3,6 @@ package ginrestaurantlike
 import (
 	"go-training/common"
 	"go-training/component/app_context"
-	restaurantstorage "go-training/modules/restaurant/storage"
 	rstlikebiz "go-training/modules/restaurantlike/biz"
 	restaurantlikestorage "go-training/modules/restaurantlike/storage"
 	"net/http"
@@ -24,8 +23,9 @@ func UserUnLikeRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 		requester := c.MustGet(common.CurrentUser).(common.Requester)
 
 		store := restaurantlikestorage.NewSQLStore(appCtx.GetMainDBConnection())
-		decStore := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
-		biz := rstlikebiz.NewUserUnLikeRestaurantBiz(store, decStore)
+		//decStore := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
+		pubsub := appCtx.GetPubsub()
+		biz := rstlikebiz.NewUserUnLikeRestaurantBiz(store, pubsub)
 
 		err = biz.UnLikeRestaurant(c.Request.Context(), requester.GetUserId(), int(uid.GetLocalID()))
 		if err != nil {

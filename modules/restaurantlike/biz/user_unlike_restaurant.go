@@ -3,9 +3,8 @@ package rstlikebiz
 import (
 	"context"
 	"go-training/common"
-	"go-training/component/asyncjob"
 	restaurantlikemodel "go-training/modules/restaurantlike/model"
-	"time"
+	"go-training/pubsub"
 )
 
 type UserUnLikeRestaurantStore interface {
@@ -13,19 +12,20 @@ type UserUnLikeRestaurantStore interface {
 }
 
 //
-type DecreaseLikeCountStore interface {
-	DecreaseLikeCount(ctx context.Context, id int) error
-}
+//type DecreaseLikeCountStore interface {
+//	DecreaseLikeCount(ctx context.Context, id int) error
+//}
 
 type userUnLikeRestaurantBiz struct {
-	store    UserUnLikeRestaurantStore
-	decStore DecreaseLikeCountStore
+	store  UserUnLikeRestaurantStore
+	pubsub pubsub.Pubsub
+	//decStore DecreaseLikeCountStore
 }
 
-func NewUserUnLikeRestaurantBiz(store UserUnLikeRestaurantStore, decStore DecreaseLikeCountStore) *userUnLikeRestaurantBiz {
+func NewUserUnLikeRestaurantBiz(store UserUnLikeRestaurantStore, pubsub pubsub.Pubsub) *userUnLikeRestaurantBiz {
 	return &userUnLikeRestaurantBiz{
-		store:    store,
-		decStore: decStore,
+		store:  store,
+		pubsub: pubsub,
 	}
 }
 
@@ -36,17 +36,23 @@ func (biz *userUnLikeRestaurantBiz) UnLikeRestaurant(ctx context.Context, userId
 		return restaurantlikemodel.ErrUserCannotUnLikeRestaurant(err)
 	}
 
-	go func() {
-		defer common.AppRecovery()
-
-		job := asyncjob.NewJob(func(ctx context.Context) error {
-			return biz.decStore.DecreaseLikeCount(ctx, restaurantId)
-		})
-
-		job.SetRetryDurations([]time.Duration{time.Second})
-
-		_ = asyncjob.NewGroup(true, job).Run(ctx)
-	}()
+	_ = biz.pubsub.Publish(ctx, common.TopicUserDislikeRestaurant, pubsub.NewMessage(&restaurantlikemodel.Like{
+		restaurantId,
+		userId,
+		nil,
+		nil,
+	}))
+	//go func() {
+	//	defer common.AppRecovery()
+	//
+	//	job := asyncjob.NewJob(func(ctx context.Context) error {
+	//		return biz.decStore.DecreaseLikeCount(ctx, restaurantId)
+	//	})
+	//
+	//	job.SetRetryDurations([]time.Duration{time.Second})
+	//
+	//	_ = asyncjob.NewGroup(true, job).Run(ctx)
+	//}()
 
 	return nil
 }
