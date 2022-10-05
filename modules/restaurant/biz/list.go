@@ -7,7 +7,7 @@ import (
 )
 
 type ListRestaurantStore interface {
-	ListDataWithCondition(context context.Context, filter *restaurantmodel.Filter, paging *common.Paging, moreKeys ...string) ([]restaurantmodel.Restaurant, error)
+	ListDataWithCondition(context context.Context, condition map[string]interface{}, filter *restaurantmodel.Filter, paging *common.Paging, moreKeys ...string) ([]restaurantmodel.Restaurant, error)
 }
 
 type listRestaurantBiz struct {
@@ -19,7 +19,7 @@ func NewListRestaurantBiz(store ListRestaurantStore) *listRestaurantBiz {
 }
 
 func (biz *listRestaurantBiz) ListRestaurant(ctx context.Context, filter *restaurantmodel.Filter, paging *common.Paging) ([]restaurantmodel.Restaurant, error) {
-	result, err := biz.store.ListDataWithCondition(ctx, filter, paging)
+	result, err := biz.store.ListDataWithCondition(ctx, nil, filter, paging)
 
 	if err != nil {
 		return nil, err
