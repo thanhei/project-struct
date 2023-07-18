@@ -1,13 +1,14 @@
 package ginrestaurant
 
 import (
-	"github.com/gin-gonic/gin"
 	"go-training/common"
 	"go-training/component/app_context"
-	restaurantbiz "go-training/modules/restaurant/biz"
-	restaurantmodel "go-training/modules/restaurant/model"
-	restaurantstorage "go-training/modules/restaurant/storage"
+	"go-training/modules/restaurant/business"
+	"go-training/modules/restaurant/entity"
+	"go-training/modules/restaurant/repository/sql"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func ListRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
@@ -20,13 +21,13 @@ func ListRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 		}
 		pagingData.Fulfill()
 
-		var filter restaurantmodel.Filter
+		var filter entity.Filter
 		if err := c.ShouldBind(&filter); err != nil {
 			c.JSON(http.StatusBadRequest, err)
 		}
 
-		store := restaurantstorage.NewSQLStore(db)
-		biz := restaurantbiz.NewListRestaurantBiz(store)
+		store := sql.NewSQLRepo(db)
+		biz := business.NewBusiness(store)
 
 		result, err := biz.ListRestaurant(c.Request.Context(), &filter, &pagingData)
 

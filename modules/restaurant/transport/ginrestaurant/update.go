@@ -3,9 +3,9 @@ package ginrestaurant
 import (
 	"go-training/common"
 	"go-training/component/app_context"
-	restaurantbiz "go-training/modules/restaurant/biz"
-	restaurantmodel "go-training/modules/restaurant/model"
-	restaurantstorage "go-training/modules/restaurant/storage"
+	"go-training/modules/restaurant/business"
+	"go-training/modules/restaurant/entity"
+	"go-training/modules/restaurant/repository/sql"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,7 +23,7 @@ func UpdateRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 			return
 		}
 
-		var data restaurantmodel.RestaurantUpdate
+		var data entity.RestaurantUpdate
 
 		if err := c.ShouldBind(&data); err != nil {
 			c.JSON(401, gin.H{
@@ -32,8 +32,8 @@ func UpdateRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 			return
 		}
 
-		store := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
-		biz := restaurantbiz.NewUpdateRestaurantBiz(store)
+		store := sql.NewSQLRepo(appCtx.GetMainDBConnection())
+		biz := business.NewBusiness(store)
 
 		if err := biz.UpdateRestaurantBiz(c.Request.Context(), int(uid.GetLocalID()), &data); err != nil {
 			c.JSON(401, gin.H{

@@ -3,9 +3,9 @@ package ginrestaurant
 import (
 	"go-training/common"
 	"go-training/component/app_context"
-	restaurantbiz "go-training/modules/restaurant/biz"
-	restaurantmodel "go-training/modules/restaurant/model"
-	restaurantstorage "go-training/modules/restaurant/storage"
+	"go-training/modules/restaurant/business"
+	"go-training/modules/restaurant/entity"
+	"go-training/modules/restaurant/repository/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,23 +14,21 @@ import (
 func CreateRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		var data restaurantmodel.RestaurantCreate
+		var data entity.RestaurantCreate
 
 		if err := c.ShouldBind(&data); err != nil {
-			panic(common.ErrCannotCreateEntity(restaurantmodel.EntityName, err))
-			return
+			panic(common.ErrCannotCreateEntity(entity.EntityName, err))
 		}
 
 		requester := c.MustGet(common.CurrentUser).(common.Requester)
 
 		data.UserId = requester.GetUserId()
 
-		store := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
-		biz := restaurantbiz.NewCreateRestaurantBiz(store)
+		store := sql.NewSQLRepo(appCtx.GetMainDBConnection())
+		biz := business.NewBusiness(store)
 
 		if err := biz.CreateRestaurant(c.Request.Context(), &data); err != nil {
-			panic(common.ErrCannotCreateEntity(restaurantmodel.EntityName, err))
-			return
+			panic(common.ErrCannotCreateEntity(entity.EntityName, err))
 		}
 
 		data.GenUID(common.DbTypeRestaurant)

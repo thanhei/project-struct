@@ -4,7 +4,7 @@ import (
 	"context"
 	"go-training/common"
 	"go-training/component/app_context"
-	restaurantstorage "go-training/modules/restaurant/storage"
+	restaurantSqlRepo "go-training/modules/restaurant/repository/sql"
 	"go-training/pubsub"
 	"log"
 )
@@ -18,7 +18,7 @@ type HasRestaurantId interface {
 func IncreaseLikeCountAfterUserLikeRestaurant(appCtx app_context.AppContext, ctx context.Context) {
 	c, _ := appCtx.GetPubsub().Subscribe(ctx, common.TopicUserLikeRestaurant)
 
-	store := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
+	store := restaurantSqlRepo.NewSQLRepo(appCtx.GetMainDBConnection())
 
 	go func() {
 		defer common.AppRecovery()
@@ -34,7 +34,7 @@ func RunIncreaseLikeCountAfterUserLikeRestaurant(appCtx app_context.AppContext) 
 	return consumerJob{
 		Title: "Increase like count after user liked restaurant",
 		Hld: func(ctx context.Context, message *pubsub.Message) error {
-			store := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
+			store := restaurantSqlRepo.NewSQLRepo(appCtx.GetMainDBConnection())
 			likeData := message.Data().(HasRestaurantId)
 			return store.IncreaseLikeCount(ctx, likeData.GetRestaurantId())
 		},

@@ -1,4 +1,4 @@
-package restaurantmodel
+package entity
 
 import (
 	"go-training/common"

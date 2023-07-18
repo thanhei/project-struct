@@ -1,17 +1,17 @@
-package restaurantstorage
+package sql
 
 import (
 	"context"
 	"go-training/common"
-	restaurantmodel "go-training/modules/restaurant/model"
+	"go-training/modules/restaurant/entity"
 )
 
-func (s *sqlStore) ListDataWithCondition(context context.Context, condition map[string]interface{}, filter *restaurantmodel.Filter, paging *common.Paging, moreKeys ...string) ([]restaurantmodel.Restaurant, error) {
-	var result []restaurantmodel.Restaurant
+func (s *sqlRepo) ListDataWithCondition(context context.Context, condition map[string]interface{}, filter *entity.Filter, paging *common.Paging, moreKeys ...string) ([]entity.Restaurant, error) {
+	var result []entity.Restaurant
 
 	db := s.db
 
-	db = db.Table(restaurantmodel.Restaurant{}.TableName()).Where(condition).Where("status in (1)")
+	db = db.Table(entity.Restaurant{}.TableName()).Where(condition).Where("status in (1)")
 
 	if v := filter; v != nil {
 		if v.OwnerId > 0 {

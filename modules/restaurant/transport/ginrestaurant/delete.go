@@ -3,8 +3,8 @@ package ginrestaurant
 import (
 	"go-training/common"
 	"go-training/component/app_context"
-	restaurantbiz "go-training/modules/restaurant/biz"
-	restaurantstorage "go-training/modules/restaurant/storage"
+	"go-training/modules/restaurant/business"
+	"go-training/modules/restaurant/repository/sql"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,8 +22,8 @@ func DeleteRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 			return
 		}
 
-		store := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
-		biz := restaurantbiz.NewDeleteRestaurantBiz(store)
+		store := sql.NewSQLRepo(appCtx.GetMainDBConnection())
+		biz := business.NewBusiness(store)
 
 		if err := biz.DeleteRestaurant(c.Request.Context(), int(uid.GetLocalID())); err != nil {
 			c.JSON(401, gin.H{

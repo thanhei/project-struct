@@ -1,12 +1,13 @@
 package ginrestaurant
 
 import (
-	"github.com/gin-gonic/gin"
 	"go-training/component/app_context"
-	restaurantbiz "go-training/modules/restaurant/biz"
-	restaurantstorage "go-training/modules/restaurant/storage"
+	"go-training/modules/restaurant/business"
+	"go-training/modules/restaurant/repository/sql"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 func FindRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
@@ -20,8 +21,8 @@ func FindRestaurant(appCtx app_context.AppContext) gin.HandlerFunc {
 			return
 		}
 
-		store := restaurantstorage.NewSQLStore(db)
-		biz := restaurantbiz.NewFindRestaurantBiz(store)
+		store := sql.NewSQLRepo(db)
+		biz := business.NewBusiness(store)
 
 		result, err := biz.FindRestaurant(c.Request.Context(), id)
 
