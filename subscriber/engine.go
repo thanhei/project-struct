@@ -14,17 +14,17 @@ type consumerJob struct {
 	Hld   func(ctx context.Context, message *pubsub.Message) error
 }
 
-type consumerEngine struct {
+type ConsumerEngine struct {
 	appCtx app_context.AppContext
 }
 
-func NewEngine(appCtx app_context.AppContext) *consumerEngine {
-	return &consumerEngine{
+func NewEngine(appCtx app_context.AppContext) *ConsumerEngine {
+	return &ConsumerEngine{
 		appCtx: appCtx,
 	}
 }
 
-func (e *consumerEngine) Start() error {
+func (e *ConsumerEngine) Start() error {
 	e.startSubTopic(
 		common.TopicUserLikeRestaurant,
 		true,
@@ -41,7 +41,7 @@ func (e *consumerEngine) Start() error {
 	return nil
 }
 
-func (e *consumerEngine) startSubTopic(topic pubsub.Topic, isConcurrent bool, jobs ...consumerJob) error {
+func (e *ConsumerEngine) startSubTopic(topic pubsub.Topic, isConcurrent bool, jobs ...consumerJob) error {
 	c, _ := e.appCtx.GetPubsub().Subscribe(context.Background(), topic)
 
 	for _, item := range jobs {

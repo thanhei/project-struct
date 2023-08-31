@@ -1,6 +1,7 @@
 package app_context
 
 import (
+	"go-training/common"
 	"go-training/pubsub"
 
 	"gorm.io/gorm"
@@ -18,8 +19,8 @@ type appCtx struct {
 	pb        pubsub.Pubsub
 }
 
-func NewAppContext(db *gorm.DB, secretKey string, pb pubsub.Pubsub) *appCtx {
-	return &appCtx{db, secretKey, pb}
+func NewAppContext(db *gorm.DB, config *common.Config, pb pubsub.Pubsub) *appCtx {
+	return &appCtx{db, config.SecretKey, pb}
 }
 
 func (ctx *appCtx) GetMainDBConnection() *gorm.DB {

@@ -1,65 +1,79 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"go-training/common"
 	"go-training/component/app_context"
+	"go-training/component/database"
 	"go-training/memcache"
 	"go-training/middleware"
 	"go-training/modules/restaurant/transport/ginrestaurant"
 	"go-training/modules/restaurantlike/transport/ginrestaurantlike"
-	userstorage "go-training/modules/user/storage"
 	"go-training/modules/user/transport/ginuser"
+	"go-training/pubsub"
 	"go-training/pubsub/pblocal"
 	"go-training/subscriber"
 	"log"
-	"os"
+
+	userstorage "go-training/modules/user/storage"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
+	"go.uber.org/fx"
 )
 
 func main() {
-	dsn := os.Getenv("MYSQL_CONN_STRING")
-	secretKey := os.Getenv("SYSTEM_SECRET")
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	fx.New(
+		fx.Provide(
+			common.NewConfig,
+			database.New,
+			fx.Annotate(pblocal.NewPubSub, fx.As(new(pubsub.Pubsub))),
+			fx.Annotate(app_context.NewAppContext, fx.As(new(app_context.AppContext))),
+			subscriber.NewEngine,
+		),
+		fx.Invoke(registerHooks),
+	).Run()
+}
 
-	mode := os.Getenv("GIN_MODE")
-	if mode != "release" {
+func registerHooks(lifecycle fx.Lifecycle, appCtx app_context.AppContext, subscriber *subscriber.ConsumerEngine) {
+	lifecycle.Append(fx.Hook{
+		OnStart: func(context.Context) error {
+			r := gin.Default()
 
-	}
-	db = db.Debug()
-	if err != nil {
-		panic(err)
-	}
-	appCtx := app_context.NewAppContext(db, secretKey, pblocal.NewPubSub())
+			if err := subscriber.Start(); err != nil {
+				log.Fatalln(err)
+			}
 
-	r := gin.Default()
+			r.Use(middleware.Recover(appCtx))
 
-	// subscriber.Setup(appCtx)
-	if err := subscriber.NewEngine(appCtx).Start(); err != nil {
-		log.Fatalln(err)
-	}
+			v1 := r.Group("/v1")
+			v1.POST("/register", ginuser.Register(appCtx))
+			v1.POST("/login", ginuser.Login(appCtx))
 
-	r.Use(middleware.Recover(appCtx))
+			userStore := userstorage.NewSQLStore(appCtx.GetMainDBConnection())
+			userCaching := memcache.NewUserCaching(memcache.NewCaching(), userStore)
 
-	v1 := r.Group("/v1")
-	v1.POST("/register", ginuser.Register(appCtx))
-	v1.POST("/login", ginuser.Login(appCtx))
+			restaurants := v1.Group("/restaurants", middleware.RequireAuth(appCtx, userCaching))
+			{
+				restaurants.POST("", ginrestaurant.CreateRestaurant(appCtx))
+				restaurants.GET("", ginrestaurant.ListRestaurant(appCtx))
+				restaurants.PATCH("/:id", ginrestaurant.UpdateRestaurant(appCtx))
+				restaurants.DELETE("/:id", ginrestaurant.DeleteRestaurant(appCtx))
 
-	userStore := userstorage.NewSQLStore(appCtx.GetMainDBConnection())
-	userCaching := memcache.NewUserCaching(memcache.NewCaching(), userStore)
+				restaurants.GET("/:id/liked-users", ginrestaurantlike.ListUserLikeRestaurant(appCtx))
 
-	restaurants := v1.Group("/restaurants", middleware.RequireAuth(appCtx, userCaching))
-	{
-		restaurants.POST("", ginrestaurant.CreateRestaurant(appCtx))
-		restaurants.GET("", ginrestaurant.ListRestaurant(appCtx))
-		restaurants.PATCH("/:id", ginrestaurant.UpdateRestaurant(appCtx))
-		restaurants.DELETE("/:id", ginrestaurant.DeleteRestaurant(appCtx))
-
-		restaurants.GET("/:id/liked-users", ginrestaurantlike.ListUserLikeRestaurant(appCtx))
-
-		restaurants.POST("/:id/like", ginrestaurantlike.UserLikeRestaurant(appCtx))
-		restaurants.DELETE("/:id/unlike", ginrestaurantlike.UserUnLikeRestaurant(appCtx))
-	}
-	r.Run()
+				restaurants.POST("/:id/like", ginrestaurantlike.UserLikeRestaurant(appCtx))
+				restaurants.DELETE("/:id/unlike", ginrestaurantlike.UserUnLikeRestaurant(appCtx))
+			}
+			return r.Run()
+		},
+		OnStop: func(context.Context) error {
+			fmt.Println("stop")
+			db, err := appCtx.GetMainDBConnection().DB()
+			if err != nil {
+				return err
+			}
+			return db.Close()
+		},
+	})
 }
