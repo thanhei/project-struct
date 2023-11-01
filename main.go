@@ -46,10 +46,6 @@ func registerHooks(lifecycle fx.Lifecycle, appCtx app_context.AppContext, subscr
 
 			r.Use(middleware.Recover(appCtx))
 
-			v1 := r.Group("/v1")
-			v1.POST("/register", ginuser.Register(appCtx))
-			v1.POST("/login", ginuser.Login(appCtx))
-
 			userStore := userstorage.NewSQLStore(appCtx.GetMainDBConnection())
 			userCaching := memcache.NewUserCaching(memcache.NewCaching(), userStore)
 

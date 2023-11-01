@@ -1,0 +1,12 @@
+service:
+  name: go-training
+  port: 8080
+mysql:
+  host: mysql
+  port: 3306
+  user: food_delivery
+  password: fo0d_d3l1v3ry
+  database: food_delivery
+system:
+  secret: abcxyz
+  token_expire: 3600

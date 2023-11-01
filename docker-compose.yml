@@ -6,8 +6,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8080:3000
-    env_file:
-      - .env
     volumes:
       - ./:/app
   mysql:
