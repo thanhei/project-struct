@@ -20,4 +20,5 @@ func (s *sqlRepo) CreateUser(ctx context.Context, data *entity.UserCreate) error
 	}
 
 	return nil
+
 }
